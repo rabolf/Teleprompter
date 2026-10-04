@@ -23,6 +23,8 @@
   <textarea id="text" placeholder="Paste your script here..."></textarea>
   <div class="row">
     <label>Font size <input id="size" type="number" min="12" max="400" value="64"> px</label>
+    <label>Scroll speed <input id="speed" type="number" min="1" max="20" value="2"> (distance per key press)</label>
+    <label><input id="horizontal" type="checkbox"> Horizontal text (single line, scrolls sideways)</label>
     <label><input id="flipH" type="checkbox"> Flip horizontal</label>
     <label><input id="flipV" type="checkbox"> Flip vertical</label>
   </div>
@@ -36,6 +38,8 @@ const saved = JSON.parse(localStorage.getItem('tp-config') || 'null');
 if (saved) {
   $('text').value = saved.text; $('size').value = saved.size;
   $('flipH').checked = saved.flipH; $('flipV').checked = saved.flipV;
+  $('horizontal').checked = !!saved.horizontal;
+  $('speed').value = saved.speed || 2;
 }
 
 const ws = new WebSocket(`ws://${location.host}/ws`);
@@ -47,7 +51,9 @@ ws.onmessage = e => {
 
 $('run').onclick = () => {
   const config = { text: $('text').value, size: +$('size').value || 64,
-                   flipH: $('flipH').checked, flipV: $('flipV').checked };
+                   flipH: $('flipH').checked, flipV: $('flipV').checked,
+                   horizontal: $('horizontal').checked,
+                   speed: Math.min(20, Math.max(1, +$('speed').value || 2)) };
   localStorage.setItem('tp-config', JSON.stringify(config));
   ws.send(JSON.stringify({ type: 'start', config }));
 };

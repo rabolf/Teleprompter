@@ -21,6 +21,11 @@
   body.viewer #scroller { inset: 50vh 0 0 0; }
   body.viewer #text { padding: 2vh 6vw 50vh; }
   body.viewer #guide { top: 50vh; }
+  /* Horizontal mode: one line scrolling sideways, full screen, regular padding. */
+  body.horizontal #scroller { inset: 0; display: flex; align-items: center; }
+  body.horizontal #flip { flex: none; }
+  body.horizontal #text { white-space: pre; padding: 0 6vw; }
+  body.horizontal #guide { display: none; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -37,14 +42,20 @@ const $ = id => document.getElementById(id);
 document.body.classList.toggle('viewer', !isController);
 let config = null, steps = 0, ws;
 
-// One step = half a line-height-ish, so every device scrolls the same amount of text.
-function stepPx() { return config.size * 0.5; }
+// One key press scrolls (speed * 25%) of the font size, so every device scrolls the same amount of text.
+function stepPx() { return config.size * 0.25 * (config.speed || 2); }
 
 function applyScroll() {
   if (!config) return;
   const s = $('scroller');
-  const max = s.scrollHeight - s.clientHeight;
-  s.scrollTop = Math.max(0, Math.min(max, steps * stepPx()));
+  const horizontal = !!config.horizontal;
+  const max = horizontal ? s.scrollWidth - s.clientWidth : s.scrollHeight - s.clientHeight;
+  steps = Math.max(0, Math.min(steps, Math.ceil(max / stepPx())));
+  const offset = Math.min(max, steps * stepPx());
+  // A mirrored axis puts the start of the text at the far end of the scroll range.
+  const mirrored = horizontal ? config.flipH : config.flipV;
+  const pos = Math.max(0, mirrored ? max - offset : offset);
+  if (horizontal) s.scrollLeft = pos; else s.scrollTop = pos;
 }
 
 function show(state) {
@@ -61,7 +72,9 @@ function show(state) {
     return;
   }
   config = state.config; steps = state.steps;
-  $('text').textContent = config.text;
+  document.body.classList.toggle('horizontal', !!config.horizontal);
+  // Line breaks become a gap between sentences in single-line mode.
+  $('text').textContent = config.horizontal ? config.text.trim().replace(/\s*\n+\s*/g, '      ') : config.text;
   $('text').style.fontSize = config.size + 'px';
   $('flip').style.transform = `scale(${config.flipH ? -1 : 1}, ${config.flipV ? -1 : 1})`;
   applyScroll();
