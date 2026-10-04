@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teleprompter</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #16181d; color: #eee; margin: 0; padding: 2rem; }
+  main { max-width: 800px; margin: 0 auto; }
+  h1 { margin-top: 0; }
+  textarea { width: 100%; height: 45vh; box-sizing: border-box; padding: .75rem; font-size: 1rem;
+             background: #22252c; color: #eee; border: 1px solid #444; border-radius: 6px; }
+  .row { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; }
+  label { display: flex; align-items: center; gap: .5rem; }
+  input[type=number] { width: 5rem; padding: .3rem; background: #22252c; color: #eee; border: 1px solid #444; border-radius: 4px; }
+  button { font-size: 1.1rem; padding: .7rem 2rem; border: 0; border-radius: 6px; background: #2e8b57; color: #fff; cursor: pointer; }
+  p.hint { color: #999; font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Teleprompter</h1>
+  <textarea id="text" placeholder="Paste your script here..."></textarea>
+  <div class="row">
+    <label>Font size <input id="size" type="number" min="12" max="400" value="64"> px</label>
+    <label><input id="flipH" type="checkbox"> Flip horizontal</label>
+    <label><input id="flipV" type="checkbox"> Flip vertical</label>
+  </div>
+  <button id="run">Run</button>
+  <p class="hint">Open the phone URL printed in the server console (<code>/view</code>), then press Run.
+     Use the up/down arrow keys on this computer to scroll the phone.</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const saved = JSON.parse(localStorage.getItem('tp-config') || 'null');
+if (saved) {
+  $('text').value = saved.text; $('size').value = saved.size;
+  $('flipH').checked = saved.flipH; $('flipV').checked = saved.flipV;
+}
+
+const ws = new WebSocket(`ws://${location.host}/ws`);
+ws.onmessage = e => {
+  const m = JSON.parse(e.data);
+  // A session is already running (e.g. page reload): rejoin it.
+  if (m.type === 'state' && m.running) location.href = '/prompter.html?role=controller';
+};
+
+$('run').onclick = () => {
+  const config = { text: $('text').value, size: +$('size').value || 64,
+                   flipH: $('flipH').checked, flipV: $('flipV').checked };
+  localStorage.setItem('tp-config', JSON.stringify(config));
+  ws.send(JSON.stringify({ type: 'start', config }));
+};
+</script>
+</body>
+</html>

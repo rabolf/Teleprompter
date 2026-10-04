@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Teleprompter": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:50474;http://localhost:50475"
+    }
+  }
+}
